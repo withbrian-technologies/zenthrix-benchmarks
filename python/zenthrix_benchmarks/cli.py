@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from .exceptions import BenchmarkError
-from .results import load_results, render_summary
+from .results import load_run, render_summary
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -23,13 +23,14 @@ def main(argv: list[str] | None = None) -> int:
     """Run the CLI and return a process exit code."""
     args = build_parser().parse_args(argv)
     try:
-        results = load_results(args.results)
+        metadata, results = load_run(args.results)
         if args.command == "validate":
             print(f"Validated {len(results)} benchmark result(s).")
+            if metadata is not None:
+                print(f"Run timestamp: {metadata.timestamp}")
         else:
             print(render_summary(results))
         return 0
     except BenchmarkError as error:
         print(f"zbench: error: {error}", file=sys.stderr)
         return 2
-

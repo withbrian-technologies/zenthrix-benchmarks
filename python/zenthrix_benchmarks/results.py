@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from math import isfinite
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,36 @@ METRIC_LABELS = {
     "load_time_ms": "Load time (ms)",
 }
 HIGHER_IS_BETTER = frozenset({"tokens_per_second"})
+SCHEMA_VERSION = 1
+
+
+@dataclass(frozen=True, slots=True)
+class RunMetadata:
+    """Metadata identifying one reproducible benchmark run."""
+
+    timestamp: str
+    commit: str
+    environment: str
+    configuration: str
+
+    @classmethod
+    def from_mapping(cls, value: object) -> "RunMetadata":
+        """Validate and construct run metadata from decoded JSON."""
+        if not isinstance(value, dict):
+            raise BenchmarkValidationError("metadata must be a JSON object")
+        metadata = cls(
+            _required_text(value, "timestamp"),
+            _required_text(value, "commit"),
+            _required_text(value, "environment"),
+            _required_text(value, "configuration"),
+        )
+        try:
+            datetime.fromisoformat(metadata.timestamp.replace("Z", "+00:00"))
+        except ValueError as error:
+            raise BenchmarkValidationError(
+                "metadata timestamp must be ISO 8601"
+            ) from error
+        return metadata
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,7 +82,12 @@ class BenchmarkResult:
 
 
 def load_results(path: str | Path) -> list[BenchmarkResult]:
-    """Load and validate a JSON array of benchmark results."""
+    """Load and validate benchmark results from an array or run envelope."""
+    return load_run(path)[1]
+
+
+def load_run(path: str | Path) -> tuple[RunMetadata | None, list[BenchmarkResult]]:
+    """Load results and optional reproducibility metadata."""
     result_path = Path(path)
     try:
         payload = json.loads(result_path.read_text(encoding="utf-8"))
@@ -59,9 +95,19 @@ def load_results(path: str | Path) -> list[BenchmarkResult]:
         raise BenchmarkValidationError(
             f"Unable to read benchmark results: {result_path}"
         ) from error
+    metadata: RunMetadata | None = None
+    if isinstance(payload, dict):
+        if payload.get("schema_version") != SCHEMA_VERSION:
+            raise BenchmarkValidationError(
+                f"schema_version must be {SCHEMA_VERSION}"
+            )
+        metadata = RunMetadata.from_mapping(payload.get("metadata"))
+        payload = payload.get("results")
     if not isinstance(payload, list) or not payload:
-        raise BenchmarkValidationError("Results file must contain a non-empty array")
-    return [BenchmarkResult.from_mapping(item) for item in payload]
+        raise BenchmarkValidationError("Results must contain a non-empty array")
+    results = [BenchmarkResult.from_mapping(item) for item in payload]
+    _validate_consistency(results)
+    return metadata, results
 
 
 def render_summary(results: list[BenchmarkResult]) -> str:
@@ -123,3 +169,11 @@ def _required_text(value: dict[str, Any], key: str) -> str:
     if not isinstance(raw_value, str) or not raw_value.strip():
         raise BenchmarkValidationError(f"{key} must be a non-empty string")
     return raw_value.strip()
+
+
+def _validate_consistency(results: list[BenchmarkResult]) -> None:
+    contexts = {(result.hardware, result.model) for result in results}
+    if len(contexts) > 1:
+        raise BenchmarkValidationError(
+            "Results must use one hardware and model context per run"
+        )

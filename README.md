@@ -44,7 +44,10 @@ uv run zbench report examples/results.json
 ```
 
 The result validator accepts `ttft_ms`, `tokens_per_second`, `peak_memory_mb`,
-and `load_time_ms`. Values must be finite and positive.
+and `load_time_ms`. Values must be finite and positive. Versioned result
+envelopes also record an ISO 8601 timestamp, source commit, environment, and
+measurement configuration; all results in one file must share the same
+hardware and model context.
 
 ## Reproducing the Results
 
@@ -79,13 +82,14 @@ summaries:
 
 ```
 
-Report columns are emitted in a stable order, implementations are sorted by
-name, and the best value in each metric is bolded. Higher throughput is better;
-lower latency, memory, and load time are better. Missing measurements are shown
-as `—` rather than being treated as zero.bash
 uv run zbench validate results.json
 uv run zbench report results.json
 ```
+
+Report columns are emitted in a stable order, implementations are sorted by
+name, and the best value in each metric is bolded. Higher throughput is better;
+lower latency, memory, and load time are better. Missing measurements are shown
+as `—` rather than being treated as zero.
 
 ## Integrity and Hardware Telemetry
 

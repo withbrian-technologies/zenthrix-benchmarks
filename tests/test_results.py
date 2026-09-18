@@ -78,3 +78,42 @@ def test_load_results_rejects_non_finite_metric(tmp_path: Path) -> None:
 
     with pytest.raises(BenchmarkValidationError, match="must be positive"):
         load_results(results_path)
+
+
+def test_load_results_rejects_mixed_contexts(tmp_path: Path) -> None:
+    results_path = tmp_path / "results.json"
+    _write_results(results_path)
+    payload = json.loads(results_path.read_text(encoding="utf-8"))
+    payload.append({**payload[0], "hardware": "Other hardware"})
+    results_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(BenchmarkValidationError, match="one hardware and model"):
+        load_results(results_path)
+
+
+def test_load_results_validates_run_metadata(tmp_path: Path) -> None:
+    results_path = tmp_path / "results.json"
+    results_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "metadata": {
+                    "timestamp": "2026-09-18T00:00:00Z",
+                    "commit": "abc123",
+                    "environment": "test",
+                    "configuration": "test",
+                },
+                "results": [
+                    {
+                        "implementation": "zenthrix",
+                        "hardware": "hardware",
+                        "model": "model",
+                        "metrics": {"ttft_ms": 1},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert len(load_results(results_path)) == 1
