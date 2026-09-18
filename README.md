@@ -21,6 +21,7 @@ hardware, model, and metric values.
 - [Verified Benchmark Results](#verified-benchmark-results-llama-32-1b-instruct)
 - [Reproducing the Results](#reproducing-the-results)
 - [Integrity and Hardware Telemetry](#integrity-and-hardware-telemetry)
+- [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 - [License](#license)
 
