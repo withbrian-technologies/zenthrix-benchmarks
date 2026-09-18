@@ -9,6 +9,13 @@ from typing import Any
 from .exceptions import BenchmarkValidationError
 
 METRICS = ("ttft_ms", "tokens_per_second", "peak_memory_mb", "load_time_ms")
+METRIC_LABELS = {
+    "ttft_ms": "TTFT (ms)",
+    "tokens_per_second": "Tokens/s",
+    "peak_memory_mb": "Peak memory (MB)",
+    "load_time_ms": "Load time (ms)",
+}
+HIGHER_IS_BETTER = frozenset({"tokens_per_second"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,14 +66,54 @@ def load_results(path: str | Path) -> list[BenchmarkResult]:
 
 def render_summary(results: list[BenchmarkResult]) -> str:
     """Render a stable Markdown table from validated results."""
-    lines = ["| Implementation | Hardware | Model | Metrics |", "|---|---|---|---|"]
-    for result in results:
-        metrics = ", ".join(
-            f"{name}={value:g}" for name, value in sorted(result.metrics.items())
+    ordered_results = sorted(
+        results,
+        key=lambda result: (
+            result.implementation,
+            result.hardware,
+            result.model,
+        ),
+    )
+    metric_names = sorted(
+        {name for result in ordered_results for name in result.metrics},
+        key=lambda name: METRICS.index(name),
+    )
+    best_values = {
+        name: (
+            max(
+                result.metrics[name]
+                for result in ordered_results
+                if name in result.metrics
+            )
+            if name in HIGHER_IS_BETTER
+            else min(
+                result.metrics[name]
+                for result in ordered_results
+                if name in result.metrics
+            )
         )
+        for name in metric_names
+    }
+    headers = ["Implementation", "Hardware", "Model"] + [
+        METRIC_LABELS[name] for name in metric_names
+    ]
+    lines = ["| " + " | ".join(headers) + " |", "|" + "---|" * len(headers)]
+    for result in ordered_results:
+        values = []
+        for name in metric_names:
+            value = result.metrics.get(name)
+            if value is None:
+                values.append("—")
+            elif value == best_values[name]:
+                values.append(f"**{value:g}**")
+            else:
+                values.append(f"{value:g}")
         lines.append(
-            f"| {result.implementation} | {result.hardware} | "
-            f"{result.model} | {metrics} |"
+            "| "
+            + " | ".join(
+                [result.implementation, result.hardware, result.model, *values]
+            )
+            + " |"
         )
     return "\n".join(lines)
 

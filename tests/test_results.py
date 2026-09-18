@@ -29,7 +29,33 @@ def test_load_results_and_render_summary(tmp_path: Path) -> None:
     results = load_results(results_path)
 
     assert len(results) == 1
-    assert "zenthrix" in render_summary(results)
+    summary = render_summary(results)
+    assert "| Implementation | Hardware | Model | TTFT (ms) | Tokens/s |" in summary
+    assert "**18.7**" in summary
+
+
+def test_render_summary_marks_metric_winners() -> None:
+    from zenthrix_benchmarks.results import BenchmarkResult
+
+    results = [
+        BenchmarkResult(
+            "baseline",
+            "hardware",
+            "model",
+            {"ttft_ms": 20, "tokens_per_second": 80},
+        ),
+        BenchmarkResult(
+            "zenthrix",
+            "hardware",
+            "model",
+            {"ttft_ms": 10, "tokens_per_second": 90},
+        ),
+    ]
+
+    summary = render_summary(results)
+
+    assert "| baseline | hardware | model | 20 | 80 |" in summary
+    assert "| zenthrix | hardware | model | **10** | **90** |" in summary
 
 
 def test_load_results_rejects_unknown_metric(tmp_path: Path) -> None:

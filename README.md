@@ -77,7 +77,12 @@ python scripts/generate_charts.py --input results/ --output-dir ./charts
 The `zbench` utility validates result JSON files and renders stable Markdown
 summaries:
 
-```bash
+```
+
+Report columns are emitted in a stable order, implementations are sorted by
+name, and the best value in each metric is bolded. Higher throughput is better;
+lower latency, memory, and load time are better. Missing measurements are shown
+as `—` rather than being treated as zero.bash
 uv run zbench validate results.json
 uv run zbench report results.json
 ```
