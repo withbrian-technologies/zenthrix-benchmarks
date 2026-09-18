@@ -18,8 +18,8 @@ Results are published for acquisition due-diligence review and general reproduci
 - [Primary Metrics Evaluated](#primary-metrics-evaluated)
 - [Verified Benchmark Results](#verified-benchmark-results-llama-32-1b-instruct)
 - [Reproducing the Results](#reproducing-the-results)
-- [Repository Layout](#repository-layout)
 - [Integrity and Hardware Telemetry](#integrity-and-hardware-telemetry)
+- [Contributing](CONTRIBUTING.md)
 - [License](#license)
 
 ---
@@ -51,7 +51,7 @@ Results are published for acquisition due-diligence review and general reproduci
 ```bash
 git clone https://github.com/withbrian-technologies/zenthrix-benchmarks.git
 cd zenthrix-benchmarks
-pip install -r requirements.txt
+uv sync
 ```
 
 ### 2. Run the Matrix Test
@@ -72,33 +72,12 @@ Process the raw telemetry JSONs into visual performance plots:
 python scripts/generate_charts.py --input results/ --output-dir ./charts
 ```
 
-## Repository Layout
+The `zbench` utility validates result JSON files and renders stable Markdown
+summaries:
 
-```
-zenthrix-benchmarks/
-├── .github/
-│   └── workflows/
-│       └── nightly-benchmarks.yml
-├── configs/
-│   ├── llama_3.2_1b.yaml
-│   ├── smollm2_1.7b.yaml
-│   └── gemma_2_2b.yaml
-├── datasets/
-│   └── evaluation_prompts.json
-├── results/
-│   ├── apple_m3_max.json
-│   ├── qualcomm_snapdragon_8gen3.json
-│   └── arm_cortex_x4.json
-├── scripts/
-│   ├── run_coreml_eval.py
-│   ├── run_llamacpp_eval.sh
-│   ├── run_executorch_eval.py
-│   ├── run_zenthrix_eval.py
-│   └── generate_charts.py
-├── .gitignore
-├── LICENSE
-├── README.md
-└── requirements.txt
+```bash
+uv run zbench validate results.json
+uv run zbench report results.json
 ```
 
 ## Integrity and Hardware Telemetry
