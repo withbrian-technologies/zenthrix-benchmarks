@@ -41,3 +41,14 @@ def test_load_results_rejects_unknown_metric(tmp_path: Path) -> None:
 
     with pytest.raises(BenchmarkValidationError, match="Unsupported metric"):
         load_results(results_path)
+
+
+def test_load_results_rejects_non_finite_metric(tmp_path: Path) -> None:
+    results_path = tmp_path / "results.json"
+    _write_results(results_path)
+    payload = json.loads(results_path.read_text(encoding="utf-8"))
+    payload[0]["metrics"]["ttft_ms"] = float("nan")
+    results_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(BenchmarkValidationError, match="must be positive"):
+        load_results(results_path)

@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import dataclass
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
@@ -36,7 +37,7 @@ class BenchmarkResult:
                 raise BenchmarkValidationError(f"Unsupported metric: {name}")
             if isinstance(raw_value, bool) or not isinstance(raw_value, (int, float)):
                 raise BenchmarkValidationError(f"Metric {name} must be numeric")
-            if raw_value <= 0:
+            if not isfinite(float(raw_value)) or raw_value <= 0:
                 raise BenchmarkValidationError(f"Metric {name} must be positive")
             metrics[name] = float(raw_value)
         return cls(implementation, hardware, model, metrics)
@@ -75,4 +76,3 @@ def _required_text(value: dict[str, Any], key: str) -> str:
     if not isinstance(raw_value, str) or not raw_value.strip():
         raise BenchmarkValidationError(f"{key} must be a non-empty string")
     return raw_value.strip()
-

@@ -9,7 +9,9 @@ This repository contains fully automated, deterministic benchmarking scripts com
 - **llama.cpp** (Metal & Hexagon builds)
 - **PyTorch ExecuTorch** (v0.3+)
 
-Results are published for acquisition due-diligence review and general reproducibility. Every number in this README can be regenerated locally using the scripts in this repo.
+Results are intended for reproducibility and review. Only validated result
+files should be published; each result must identify its implementation,
+hardware, model, and metric values.
 
 ---
 
@@ -31,18 +33,18 @@ Results are published for acquisition due-diligence review and general reproduci
 3. **Peak Resident Set Size (RSS)** — Physical RAM overhead measured throughout the execution lifecycle.
 4. **Thermal Throttling Threshold** — Latency variation across continuous 15-minute inference stress tests.
 
-## Verified Benchmark Results: Llama-3.2-1B-Instruct
+## Result Format
 
-**Hardware:** Apple M3 Max (36GB Unified Memory, macOS 14.5)
+An example validated result file is available at
+[`examples/results.json`](examples/results.json). Validate it with:
 
-| Metric | Apple CoreML Tools | llama.cpp (Metal) | ExecuTorch | Zenthrix Compiler |
-|---|---|---|---|---|
-| TTFT (ms) | 48.2 | 34.1 | 39.5 | **18.7** |
-| Throughput (tokens/s) | 52.4 | 68.2 | 61.0 | **94.6** |
-| Peak Memory (RSS) | 1.82 GB | 1.24 GB | 1.35 GB | **0.82 GB** |
-| Model Load Time (ms) | 410 | 120 | 185 | **44** |
+```bash
+uv run zbench validate examples/results.json
+uv run zbench report examples/results.json
+```
 
-> Bold values indicate the best result in each row.
+The result validator accepts `ttft_ms`, `tokens_per_second`, `peak_memory_mb`,
+and `load_time_ms`. Values must be finite and positive.
 
 ## Reproducing the Results
 
